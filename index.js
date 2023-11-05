@@ -30,10 +30,19 @@ const client = new MongoClient(uri, {
 async function run() {
     const jobsCollection = client.db("jobsDB").collection("jobs")
     try {
+
+        app.post('/jobs', async (req, res) => {
+            const jobs = req.body
+            console.log(jobs)
+            const result = await jobsCollection.insertOne(jobs)
+            res.send(result)
+        })
+
         app.get('/jobs', async (req, res) => {
             const result = await jobsCollection.find().toArray();
             res.send(result)
-          })
+        })
+
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
