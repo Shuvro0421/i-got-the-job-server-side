@@ -30,6 +30,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
     const jobsCollection = client.db("jobsDB").collection("jobs")
+    const appliedJobsCollection = client.db("jobsDB").collection("appliedJobs")
     try {
 
         app.post('/jobs', async (req, res) => {
@@ -73,6 +74,18 @@ async function run() {
             }
 
             const result = await jobsCollection.updateOne(filter, job, options)
+            res.send(result)
+        })
+        // applied jobs
+        app.post('/appliedJobs', async (req, res) => {
+            const appliedJobs = req.body
+            console.log(appliedJobs)
+            const result = await appliedJobsCollection.insertOne(appliedJobs)
+            res.send(result)
+        })
+
+        app.get('/appliedJobs', async (req, res) => {
+            const result = await appliedJobsCollection.find().toArray();
             res.send(result)
         })
 
