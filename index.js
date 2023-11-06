@@ -1,8 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const app = express()
+require('dotenv').config()
 const port = process.env.PORT || 5000
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // middleware
 app.use(cors())
@@ -15,7 +16,7 @@ app.get('/', (req, res) => {
 
 
 
-const uri = `mongodb+srv://igotthejob:ATzHV2DhwY34bKc8@cluster0.04lxrta.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.VITE_DB_USER}:${process.env.VITE_DB_PASS}@cluster0.04lxrta.mongodb.net/?retryWrites=true&w=majority`;
 
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -40,6 +41,46 @@ async function run() {
 
         app.get('/jobs', async (req, res) => {
             const result = await jobsCollection.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/jobs/singleJob/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await jobsCollection.findOne(query)
+            res.send(result)
+        })
+
+        // update the product id
+        app.put('/jobs/singleJob/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updatedJob = req.body
+            const job = {
+                $set: {
+
+                    image: updatedJob.image,
+                    logo: updatedJob.logo,
+                    title: updatedJob.title,
+                    name: updatedJob.name,
+                    category: updatedJob.category,
+                    salary: updatedJob.salary,
+                    postingDate: updatedJob.postingDate,
+                    applicationDeadline: updatedJob.applicationDeadline,
+                    description: updatedJob.description,
+                }
+            }
+
+            const result = await jobsCollection.updateOne(filter, job, options)
+            res.send(result)
+        })
+
+        // delete add to cart id 
+        app.delete('/jobs/:_id', async (req, res) => {
+            const id = req.params._id
+            const query = { _id: new ObjectId(id) }
+            const result = await jobsCollection.deleteOne(query)
             res.send(result)
         })
 
