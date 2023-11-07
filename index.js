@@ -76,13 +76,41 @@ async function run() {
             const result = await jobsCollection.updateOne(filter, job, options)
             res.send(result)
         })
-        // applied jobs
+
+
         app.post('/appliedJobs', async (req, res) => {
-            const appliedJobs = req.body
-            console.log(appliedJobs)
-            const result = await appliedJobsCollection.insertOne(appliedJobs)
-            res.send(result)
-        })
+            const appliedJob = req.body;
+
+            // Add the applied job to the 'appliedJobsCollection'
+            const result = await appliedJobsCollection.insertOne(appliedJob);
+
+            // Increment 'applicantsNumber' in the 'jobsCollection' for the corresponding job
+            const jobId = appliedJob.jobId;
+            const query = { _id: new ObjectId(jobId) };
+
+            // Assuming you retrieved the job data and 'applicantsNumber' is stored as a string
+            const job = await jobsCollection.findOne(query);
+
+            // Convert 'applicantsNumber' from string to integer before using it
+            if (job) {
+                const currentApplicants = parseInt(job.applicantsNumber, 10); // Parse string to integer
+                const updatedApplicantsNumber = currentApplicants + 1;
+
+                // Update the 'jobsCollection' with the incremented value
+                const updateJobQuery = {
+                    $set: { applicantsNumber: updatedApplicantsNumber }
+                };
+
+                await jobsCollection.updateOne(query, updateJobQuery);
+            }
+
+
+            res.send(result);
+        });
+
+
+
+
 
         app.get('/appliedJobs', async (req, res) => {
             const result = await appliedJobsCollection.find().toArray();
