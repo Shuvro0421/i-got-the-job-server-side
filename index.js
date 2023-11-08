@@ -21,7 +21,26 @@ app.get('/', (req, res) => {
     res.send('i got the job is running')
 })
 
-
+// middleware
+const logger = (req, res, next) => {
+    console.log(req.method, req.url)
+    next()
+}
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token
+    // console.log('token in the middleware' , token)
+    // no token available
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.user = decoded
+        next()
+    })
+}
 
 
 const uri = `mongodb+srv://${process.env.VITE_DB_USER}:${process.env.VITE_DB_PASS}@cluster0.04lxrta.mongodb.net/?retryWrites=true&w=majority`;
@@ -41,7 +60,7 @@ async function run() {
     const appliedJobsCollection = client.db("jobsDB").collection("appliedJobs")
     try {
         // jwt token
-        app.post('/jwt', async (req, res) => {
+        app.post('/jwt', logger, async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 
@@ -53,7 +72,7 @@ async function run() {
         });
         app.post('/logout', async (req, res) => {
             const user = req.body
-            console.log('logging out ' , user)
+            console.log('logging out ', user)
             res.clearCookie('token', { maxAge: 0 }).send({ success: true })
         })
 
@@ -105,7 +124,7 @@ async function run() {
 
         app.post('/appliedJobs', async (req, res) => {
             const appliedJob = req.body;
-            
+
             // Add the applied job to the 'appliedJobsCollection'
             const result = await appliedJobsCollection.insertOne(appliedJob);
 
@@ -137,11 +156,16 @@ async function run() {
 
 
 
-        app.get('/appliedJobs', async (req, res) => {
+        app.get('/appliedJobs', logger, verifyToken, async (req, res) => {
+
+            if(req.user.email !== req.query.email){
+                return res.status(403).send({message:'forbidden access'})
+            }
 
             const result = await appliedJobsCollection.find().toArray();
             res.send(result)
-            console.log('cookies' , req.cookies)
+
+            // console.log('cookies' , req.cookies)
         })
 
         // delete add to cart id 
