@@ -11,8 +11,9 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 app.use(cors({
     origin: [
         // 'http://localhost:5173'
-        'https://i-got-the-job-auth.web.app/',
-        'https://i-got-the-job-auth.firebaseapp.com/'
+        'https://i-got-the-job-auth.web.app',
+        'https://i-got-the-job-auth.firebaseapp.com'
+        
     ],
     credentials: true
 }))
