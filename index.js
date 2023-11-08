@@ -1,13 +1,21 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const app = express()
 require('dotenv').config()
 const port = process.env.PORT || 5000
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // middleware
-app.use(cors())
+app.use(cors({
+    origin: [
+        'http://localhost:5173'
+    ],
+    credentials: true
+}))
 app.use(express.json())
+app.use(cookieParser())
 
 app.get('/', (req, res) => {
     res.send('i got the job is running')
@@ -32,6 +40,23 @@ async function run() {
     const jobsCollection = client.db("jobsDB").collection("jobs")
     const appliedJobsCollection = client.db("jobsDB").collection("appliedJobs")
     try {
+        // jwt token
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none'
+            }).send({ success: true });
+        });
+        app.post('/logout', async (req, res) => {
+            const user = req.body
+            console.log('logging out ' , user)
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true })
+        })
+
 
         app.post('/jobs', async (req, res) => {
             const jobs = req.body
@@ -80,7 +105,7 @@ async function run() {
 
         app.post('/appliedJobs', async (req, res) => {
             const appliedJob = req.body;
-
+            
             // Add the applied job to the 'appliedJobsCollection'
             const result = await appliedJobsCollection.insertOne(appliedJob);
 
@@ -113,8 +138,10 @@ async function run() {
 
 
         app.get('/appliedJobs', async (req, res) => {
+
             const result = await appliedJobsCollection.find().toArray();
             res.send(result)
+            console.log('cookies' , req.cookies)
         })
 
         // delete add to cart id 
