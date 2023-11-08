@@ -58,6 +58,8 @@ const client = new MongoClient(uri, {
 async function run() {
     const jobsCollection = client.db("jobsDB").collection("jobs")
     const appliedJobsCollection = client.db("jobsDB").collection("appliedJobs")
+    const reviewsCollection = client.db("jobsDB").collection("reviews")
+
     try {
         // jwt token
         app.post('/jwt', logger, async (req, res) => {
@@ -85,9 +87,26 @@ async function run() {
         })
 
         app.get('/jobs', async (req, res) => {
+
+
             const result = await jobsCollection.find().toArray();
             res.send(result)
         })
+
+        app.get('/reviews' , async (req, res) => {
+
+
+            const result = await reviewsCollection.find().toArray();
+            res.send(result)
+        })
+        app.post('/reviews', async (req, res) => {
+            const reviews = req.body
+            console.log(reviews)
+            const result = await reviewsCollection.insertOne(reviews)
+            res.send(result)
+        })
+
+
 
         app.get('/jobs/singleJob/:id', async (req, res) => {
             const id = req.params.id
@@ -158,8 +177,8 @@ async function run() {
 
         app.get('/appliedJobs', logger, verifyToken, async (req, res) => {
 
-            if(req.user.email !== req.query.email){
-                return res.status(403).send({message:'forbidden access'})
+            if (req.user.email !== req.query.email) {
+                return res.status(403).send({ message: 'forbidden access' })
             }
 
             const result = await appliedJobsCollection.find().toArray();
